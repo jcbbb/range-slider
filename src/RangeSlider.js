@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 
 const RangeSlider = ({ max, min, step }) => {
     const track = useRef();
@@ -6,20 +6,44 @@ const RangeSlider = ({ max, min, step }) => {
     const thumbLeft = useRef();
     const thumbRight = useRef();
 
-    useEffect(() => {
-        thumbLeft.current.addEventListener('mousedown', (event) => {
-            event.preventDefault();
-            track.current.style.width = `${80}%`;
-        });
-    }, [thumbLeft, track]);
+    const [labels, setLabels] = useState({
+        min: 0,
+        max: 0,
+    });
+
+    const updateMinVal = useCallback(() => {
+        const backgroundX = background.current.getBoundingClientRect().x;
+        const trackX = track.current.getBoundingClientRect().x;
+
+        let diff = trackX - backgroundX;
+
+        const diffPercent = Math.round(100 * (diff / background.current.getBoundingClientRect().width));
+        setLabels((prev) => ({
+            ...prev,
+            min: diffPercent,
+        }));
+    }, [background, track]);
+
+    const updateMaxVal = useCallback(() => {
+        const backgroundX = background.current.getBoundingClientRect().x;
+        const trackX = track.current.getBoundingClientRect().x + track.current.offsetWidth;
+        let diff = trackX - backgroundX;
+        const diffPercent = Math.round(100 * (diff / background.current.getBoundingClientRect().width));
+        setLabels((prev) => ({
+            ...prev,
+            max: diffPercent,
+        }));
+    }, [background, track]);
 
     useEffect(() => {
-        thumbRight.current.style.left = track.current.offsetWidth - 30 + 'px';
-    }, [thumbRight]);
+        updateMaxVal();
+        updateMinVal();
+    }, [updateMinVal, updateMaxVal]);
 
     useEffect(() => {
         let current = track.current;
         let currentBackground = background.current;
+        thumbRight.current.style.left = track.current.offsetWidth - 30 + 'px';
 
         current.addEventListener('mousedown', (event) => {
             event.preventDefault();
@@ -40,6 +64,8 @@ const RangeSlider = ({ max, min, step }) => {
                 current.style.left = newLeft + 'px';
                 thumbLeft.current.style.left = newLeft + 'px';
                 thumbRight.current.style.left = newLeft + current.offsetWidth - 30 + 'px';
+                updateMinVal();
+                updateMaxVal();
             };
 
             const mouseUp = () => {
@@ -50,16 +76,17 @@ const RangeSlider = ({ max, min, step }) => {
             document.addEventListener('mouseup', mouseUp);
         });
     }, [track]);
+
     return (
         <div className="range">
             <span className="range__label range__label--min">{min}</span>
             <div className="range__track-background" ref={background}>
                 <div className="range__track" ref={track}></div>
                 <span className="range__thumb" ref={thumbLeft}>
-                    <span className="range__thumb-label">0</span>
+                    <span className="range__thumb-label">{labels.min}</span>
                 </span>
                 <span className="range__thumb" ref={thumbRight}>
-                    <span className="range__thumb-label">9</span>
+                    <span className="range__thumb-label">{labels.max}</span>
                 </span>
             </div>
             <span className="range__label range__label--max">{max}</span>
