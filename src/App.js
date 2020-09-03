@@ -5,7 +5,7 @@ import './app.scss';
 const App = () => {
     return (
         <div className="container">
-            <RangeSlider min={0} max={100} step={10} />
+            <RangeSlider min={0} max={20} defaultMin={6} defaultMax={15} />
         </div>
     );
 };
