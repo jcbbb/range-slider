@@ -1,30 +1,22 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
-
-const BUTTON_SIZE = 30;
+import React, { useRef, useCallback, useState } from 'react';
 
 const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
     const track = useRef();
     const background = useRef();
     const thumbLeft = useRef();
     const thumbRight = useRef();
-    let BUTTON_SIZE_PERCENT;
-
-    useEffect(() => {
-        BUTTON_SIZE_PERCENT = Math.floor((30 / background.current.offsetWidth) * 100);
-    }, [BUTTON_SIZE]);
 
     const getPercentageValue = (value) => {
         return Math.floor((value * 100) / max);
+    };
+    const getLabelValue = (handle) => {
+        return Math.round((handle * max) / 100);
     };
 
     const [handles, setHandles] = useState({
         min: getPercentageValue(defaultMin),
         max: getPercentageValue(defaultMax),
     });
-
-    const getLabelValue = (handle) => {
-        return Math.round((handle * max) / 100);
-    };
 
     const handleThumbLeft = useCallback(
         (event) => {
@@ -45,7 +37,9 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                     newLeft = 0;
                 }
                 const rightEdge =
-                    thumbRight.current.getBoundingClientRect().left - background.current.getBoundingClientRect().left;
+                    thumbRight.current.getBoundingClientRect().left -
+                    background.current.getBoundingClientRect().left -
+                    thumbRight.current.offsetWidth;
 
                 if (newLeft > rightEdge) {
                     newLeft = rightEdge;
@@ -66,13 +60,13 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                 });
             }
         },
-        [track, background, handles],
+        [setHandles],
     );
 
     const handleThumbRight = useCallback(
         (event) => {
             event.preventDefault();
-            const shiftX = event.clientX - thumbRight.current.getBoundingClientRect().left;
+            const shiftX = event.clientX - thumbRight.current.getBoundingClientRect().right;
 
             ['mousemove', 'touchmove'].forEach((event) => {
                 document.addEventListener(event, mousemove);
@@ -85,12 +79,14 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                 let newLeft = event.clientX - shiftX - background.current.getBoundingClientRect().left;
 
                 const leftEdge =
-                    thumbLeft.current.getBoundingClientRect().right - background.current.getBoundingClientRect().left;
+                    thumbLeft.current.getBoundingClientRect().right -
+                    background.current.getBoundingClientRect().left +
+                    thumbLeft.current.offsetWidth;
 
                 if (newLeft < leftEdge) {
                     newLeft = leftEdge;
                 }
-                const rightEdge = background.current.offsetWidth - thumbRight.current.offsetWidth;
+                const rightEdge = background.current.offsetWidth;
 
                 if (newLeft > rightEdge) {
                     newLeft = rightEdge;
@@ -111,7 +107,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                 });
             }
         },
-        [track, background, thumbLeft],
+        [setHandles],
     );
 
     const handleTrack = useCallback(
@@ -132,8 +128,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                 if (newLeft < 0) {
                     newLeft = 0;
                 }
-                let rightEdge =
-                    background.current.offsetWidth - track.current.offsetWidth - thumbRight.current.offsetWidth;
+                let rightEdge = background.current.offsetWidth - track.current.offsetWidth;
 
                 if (newLeft > rightEdge) {
                     newLeft = rightEdge;
@@ -167,6 +162,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                     draggable="false"
                     style={{ width: `${handles.max - handles.min}%`, left: `${handles.min}%` }}
                     onMouseDown={handleTrack}
+                    onTouchStart={handleTrack}
                 ></div>
                 <span
                     className="range__thumb"
@@ -174,15 +170,17 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                     draggable="false"
                     style={{ left: `${handles.min}%` }}
                     onMouseDown={handleThumbLeft}
+                    onTouchStart={handleThumbLeft}
                 >
                     <span className="range__thumb-label">{getLabelValue(handles.min)}</span>
                 </span>
                 <span
-                    className="range__thumb"
+                    className="range__thumb range__thumb--max"
                     ref={thumbRight}
                     draggable="false"
                     style={{ left: `${handles.max}%` }}
                     onMouseDown={handleThumbRight}
+                    onTouchStart={handleThumbRight}
                 >
                     <span className="range__thumb-label">{getLabelValue(handles.max)}</span>
                 </span>

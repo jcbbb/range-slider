@@ -32,9 +32,12 @@
         height: 30px;
         border-radius: 50%;
         position: absolute;
+        cursor: pointer;
         top: 50%;
         transform: translateY(-50%);
-        cursor: pointer;
+        &--max {
+            transform: translate(-100%, -50%);
+        }
     }
     &__thumb-label {
         position: absolute;
