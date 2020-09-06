@@ -13,6 +13,10 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
         return Math.round((handle * max) / 100);
     };
 
+    const getClientX = (event) => {
+        return event.touches ? event.touches[0].clientX : event.clientX;
+    };
+
     const [handles, setHandles] = useState({
         min: getPercentageValue(defaultMin),
         max: getPercentageValue(defaultMax),
@@ -21,7 +25,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
     const handleThumbLeft = useCallback(
         (event) => {
             event.preventDefault();
-            const shiftX = event.clientX - thumbLeft.current.getBoundingClientRect().left;
+            const shiftX = getClientX(event) - thumbLeft.current.getBoundingClientRect().left;
 
             ['mousemove', 'touchmove'].forEach((event) => {
                 document.addEventListener(event, mousemove);
@@ -31,7 +35,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
             });
 
             function mousemove(event) {
-                let newLeft = event.clientX - shiftX - background.current.getBoundingClientRect().left;
+                let newLeft = getClientX(event) - shiftX - background.current.getBoundingClientRect().left;
 
                 if (newLeft < 0) {
                     newLeft = 0;
@@ -66,7 +70,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
     const handleThumbRight = useCallback(
         (event) => {
             event.preventDefault();
-            const shiftX = event.clientX - thumbRight.current.getBoundingClientRect().right;
+            const shiftX = getClientX(event) - thumbRight.current.getBoundingClientRect().right;
 
             ['mousemove', 'touchmove'].forEach((event) => {
                 document.addEventListener(event, mousemove);
@@ -76,7 +80,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
             });
 
             function mousemove(event) {
-                let newLeft = event.clientX - shiftX - background.current.getBoundingClientRect().left;
+                let newLeft = getClientX(event) - shiftX - background.current.getBoundingClientRect().left;
 
                 const leftEdge =
                     thumbLeft.current.getBoundingClientRect().right -
@@ -113,7 +117,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
     const handleTrack = useCallback(
         (event) => {
             event.preventDefault();
-            let shiftX = event.clientX - track.current.getBoundingClientRect().left;
+            let shiftX = getClientX(event) - track.current.getBoundingClientRect().left;
 
             ['mousemove', 'touchmove'].forEach((event) => {
                 document.addEventListener(event, mousemove);
@@ -123,7 +127,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
             });
 
             function mousemove(event) {
-                let newLeft = event.clientX - shiftX - background.current.getBoundingClientRect().left;
+                let newLeft = getClientX(event) - shiftX - background.current.getBoundingClientRect().left;
 
                 if (newLeft < 0) {
                     newLeft = 0;
