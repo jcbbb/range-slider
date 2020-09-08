@@ -5,6 +5,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
     const background = useRef();
     const thumbLeft = useRef();
     const thumbRight = useRef();
+    const dragElement = useRef();
 
     const getPercentageValue = (value) => {
         return Math.floor((value * 100) / max);
@@ -22,10 +23,29 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
         max: getPercentageValue(defaultMax),
     });
 
-    const handleThumbLeft = useCallback(
+    const getEdges = useCallback(() => {
+        const { left, width } = background.current.getBoundingClientRect();
+        let leftEdge = 0;
+        let rightEdge = width;
+        if (dragElement.current === thumbLeft.current) {
+            rightEdge = thumbRight.current.getBoundingClientRect().left - left - thumbRight.current.offsetWidth;
+            return [leftEdge, rightEdge];
+        } else if (dragElement.current === thumbRight.current) {
+            leftEdge = thumbLeft.current.getBoundingClientRect().right - left + thumbLeft.current.offsetWidth;
+            return [leftEdge, rightEdge];
+        }
+
+        rightEdge = width - track.current.offsetWidth;
+        return [leftEdge, rightEdge];
+    }, []);
+
+    const handleDrag = useCallback(
         (event) => {
             event.preventDefault();
-            const shiftX = getClientX(event) - thumbLeft.current.getBoundingClientRect().left;
+            dragElement.current = event.target;
+            const { left, right } = event.target.getBoundingClientRect();
+
+            const shiftX = getClientX(event) - (event.target === thumbRight.current ? right : left);
 
             ['mousemove', 'touchmove'].forEach((event) => {
                 document.addEventListener(event, mousemove);
@@ -37,22 +57,37 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
             function mousemove(event) {
                 let newLeft = getClientX(event) - shiftX - background.current.getBoundingClientRect().left;
 
-                if (newLeft < 0) {
-                    newLeft = 0;
-                }
-                const rightEdge =
-                    thumbRight.current.getBoundingClientRect().left -
-                    background.current.getBoundingClientRect().left -
-                    thumbRight.current.offsetWidth;
+                const [leftEdge, rightEdge] = getEdges();
 
+                // Handle the edges
+                if (newLeft < leftEdge) {
+                    newLeft = leftEdge;
+                }
                 if (newLeft > rightEdge) {
                     newLeft = rightEdge;
                 }
 
-                setHandles((prev) => ({
-                    ...prev,
-                    min: Math.round((newLeft / background.current.offsetWidth) * 100),
-                }));
+                // Update percentages based on handles
+                if (dragElement.current === thumbLeft.current) {
+                    setHandles((prev) => ({
+                        ...prev,
+                        min: Math.round((newLeft / background.current.offsetWidth) * 100),
+                    }));
+                }
+
+                if (dragElement.current === thumbRight.current) {
+                    setHandles((prev) => ({
+                        ...prev,
+                        max: Math.round((newLeft / background.current.offsetWidth) * 100),
+                    }));
+                }
+
+                if (dragElement.current === track.current) {
+                    setHandles({
+                        min: Math.round((newLeft / background.current.offsetWidth) * 100),
+                        max: Math.round(((newLeft + track.current.offsetWidth) / background.current.offsetWidth) * 100),
+                    });
+                }
             }
 
             function mouseup() {
@@ -64,96 +99,7 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                 });
             }
         },
-        [setHandles],
-    );
-
-    const handleThumbRight = useCallback(
-        (event) => {
-            event.preventDefault();
-            const shiftX = getClientX(event) - thumbRight.current.getBoundingClientRect().right;
-
-            ['mousemove', 'touchmove'].forEach((event) => {
-                document.addEventListener(event, mousemove);
-            });
-            ['mouseup', 'touchend'].forEach((event) => {
-                document.addEventListener(event, mouseup);
-            });
-
-            function mousemove(event) {
-                let newLeft = getClientX(event) - shiftX - background.current.getBoundingClientRect().left;
-
-                const leftEdge =
-                    thumbLeft.current.getBoundingClientRect().right -
-                    background.current.getBoundingClientRect().left +
-                    thumbLeft.current.offsetWidth;
-
-                if (newLeft < leftEdge) {
-                    newLeft = leftEdge;
-                }
-                const rightEdge = background.current.offsetWidth;
-
-                if (newLeft > rightEdge) {
-                    newLeft = rightEdge;
-                }
-
-                setHandles((prev) => ({
-                    ...prev,
-                    max: Math.round((newLeft / background.current.offsetWidth) * 100),
-                }));
-            }
-
-            function mouseup() {
-                ['mousemove', 'touchmove'].forEach((event) => {
-                    document.removeEventListener(event, mousemove);
-                });
-                ['mouseup', 'touchend'].forEach((event) => {
-                    document.removeEventListener(event, mouseup);
-                });
-            }
-        },
-        [setHandles],
-    );
-
-    const handleTrack = useCallback(
-        (event) => {
-            event.preventDefault();
-            let shiftX = getClientX(event) - track.current.getBoundingClientRect().left;
-
-            ['mousemove', 'touchmove'].forEach((event) => {
-                document.addEventListener(event, mousemove);
-            });
-            ['mouseup', 'touchend'].forEach((event) => {
-                document.addEventListener(event, mouseup);
-            });
-
-            function mousemove(event) {
-                let newLeft = getClientX(event) - shiftX - background.current.getBoundingClientRect().left;
-
-                if (newLeft < 0) {
-                    newLeft = 0;
-                }
-                let rightEdge = background.current.offsetWidth - track.current.offsetWidth;
-
-                if (newLeft > rightEdge) {
-                    newLeft = rightEdge;
-                }
-
-                setHandles({
-                    min: Math.round((newLeft / background.current.offsetWidth) * 100),
-                    max: Math.round(((newLeft + track.current.offsetWidth) / background.current.offsetWidth) * 100),
-                });
-            }
-
-            function mouseup() {
-                ['mousemove', 'touchmove'].forEach((event) => {
-                    document.removeEventListener(event, mousemove);
-                });
-                ['mouseup', 'touchend'].forEach((event) => {
-                    document.removeEventListener(event, mouseup);
-                });
-            }
-        },
-        [setHandles],
+        [setHandles, getEdges],
     );
 
     return (
@@ -165,16 +111,16 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                     ref={track}
                     draggable="false"
                     style={{ width: `${handles.max - handles.min}%`, left: `${handles.min}%` }}
-                    onMouseDown={handleTrack}
-                    onTouchStart={handleTrack}
+                    onMouseDown={handleDrag}
+                    onTouchStart={handleDrag}
                 ></div>
                 <span
                     className="range__thumb"
                     ref={thumbLeft}
                     draggable="false"
                     style={{ left: `${handles.min}%` }}
-                    onMouseDown={handleThumbLeft}
-                    onTouchStart={handleThumbLeft}
+                    onMouseDown={handleDrag}
+                    onTouchStart={handleDrag}
                 >
                     <span className="range__thumb-label">{getLabelValue(handles.min)}</span>
                 </span>
@@ -183,8 +129,8 @@ const RangeSlider = ({ max, min, defaultMin, defaultMax }) => {
                     ref={thumbRight}
                     draggable="false"
                     style={{ left: `${handles.max}%` }}
-                    onMouseDown={handleThumbRight}
-                    onTouchStart={handleThumbRight}
+                    onMouseDown={handleDrag}
+                    onTouchStart={handleDrag}
                 >
                     <span className="range__thumb-label">{getLabelValue(handles.max)}</span>
                 </span>
